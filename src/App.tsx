@@ -16,6 +16,8 @@ import {
   User, 
   Loader2 
 } from 'lucide-react';
+import { Toaster } from 'react-hot-toast';
+import { notify } from './lib/notifications';
 import { 
   GET_CHATS, 
   CREATE_CHAT,
@@ -115,6 +117,7 @@ function App(): JSX.Element {
   return (
     <div className="min-h-screen bg-gray-900">
       {isAuthenticated ? <ChatInterface /> : <AuthComponent />}
+      <Toaster />
     </div>
   );
 }
@@ -135,12 +138,31 @@ function AuthComponent(): JSX.Element {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    if (isSignUp) {
-      await signUpEmailPassword(email, password, {
-        displayName,
-      });
-    } else {
-      await signInEmailPassword(email, password);
+    const loadingToast = notify.loading(isSignUp ? 'Creating account...' : 'Signing in...');
+    
+    try {
+      if (isSignUp) {
+        const result = await signUpEmailPassword(email, password, {
+          displayName,
+        });
+        notify.dismiss(loadingToast);
+        if (result.error) {
+          notify.error(result.error.message || 'Registration failed');
+        } else {
+          notify.success('Account created successfully! Please check your email to verify.');
+        }
+      } else {
+        const result = await signInEmailPassword(email, password);
+        notify.dismiss(loadingToast);
+        if (result.error) {
+          notify.error(result.error.message || 'Sign in failed');
+        } else {
+          notify.success('Welcome back! Signed in successfully.');
+        }
+      }
+    } catch (err) {
+      notify.dismiss(loadingToast);
+      notify.error('Something went wrong. Please try again.');
     }
   };
 
@@ -621,7 +643,7 @@ function MessageWindow({ activeChatId }: MessageWindowProps): JSX.Element {
                     handleSubmit(e as any);
                   }
                 }}
-                placeholder="Type your message to Vartalap..."
+                placeholder="Type your message here..."
                 disabled={sending}
                 className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-6 py-4 pr-12 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50 resize-none shadow-sm hover:shadow-md transition-shadow"
               />
