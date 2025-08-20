@@ -485,14 +485,14 @@ function MessageWindow({ activeChatId }: MessageWindowProps): JSX.Element {
     if (!message.trim() || !activeChatId || sending) return;
 
     const messageContent = message.trim();
+    
+    // Clear the input immediately before starting to send
+    setMessage('');
     setSending(true);
 
     console.log('💬 Sending message:', { activeChatId, messageContent });
 
     try {
-      // Clear the input immediately when starting to send
-      setMessage('');
-      
       // Focus back to input for better UX
       if (inputRef.current) {
         inputRef.current.focus();
@@ -640,7 +640,12 @@ function MessageWindow({ activeChatId }: MessageWindowProps): JSX.Element {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    handleSubmit(e as any);
+                    const syntheticEvent = {
+                      preventDefault: () => {},
+                      target: e.target,
+                      currentTarget: e.currentTarget
+                    } as React.FormEvent<HTMLFormElement>;
+                    handleSubmit(syntheticEvent);
                   }
                 }}
                 placeholder="Type your message here..."
